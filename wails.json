@@ -1,0 +1,13 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "dmarktodo",
+  "outputfilename": "dmarktodo",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "IceMAN2377",
+    "email": "alisher.karmenbayev@nu.edu.kz"
+  }
+}
