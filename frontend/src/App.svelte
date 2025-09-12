@@ -1,79 +1,166 @@
 <script>
   import logo from './assets/images/logo-universal.png'
-  import {Greet} from '../wailsjs/go/main/App.js'
 
-  let resultText = "Please enter your name below 👇"
-  let name
-
-  function greet() {
-    Greet(name).then(result => resultText = result)
+  
+  // Define the Task interface
+  let tasks = [];
+  let newTaskTitle = "";
+  
+  // Function to get all tasks
+  async function getTasks() {
+    try {
+      // Call the Go function directly using the window object
+      tasks = await window.go.backend.App.GetTasks();
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+    }
   }
+  
+  // Function to add a new task
+  async function addTask() {
+    if (newTaskTitle.trim() === "") return;
+    
+    try {
+      // Call the Go function directly using the window object
+      const newTask = await window.go.backend.App.AddTask(newTaskTitle);
+      tasks = [...tasks, newTask];
+      newTaskTitle = "";
+    } catch (error) {
+      console.error("Error adding task:", error);
+    }
+  }
+  
+  // Load tasks when the component is mounted
+  getTasks();
 </script>
 
 <main>
-  <img alt="Wails logo" id="logo" src="{logo}">
-  <div class="result" id="result">{resultText}</div>
-  <div class="input-box" id="input">
-    <input autocomplete="off" bind:value={name} class="input" id="name" type="text"/>
-    <button class="btn" on:click={greet}>Greet</button>
+  <div class="todo-app">
+    <img alt="Todo App logo" id="logo" src="{logo}">
+    <h1>Todo List</h1>
+    
+    <div class="add-task">
+      <input 
+        type="text" 
+        placeholder="Enter a new task..." 
+        bind:value={newTaskTitle}
+        on:keypress={(e) => e.key === 'Enter' && addTask()}
+        class="input"
+      />
+      <button class="btn" on:click={addTask}>Add Task</button>
+    </div>
+    
+    <div class="task-list">
+      {#if tasks.length === 0}
+        <p class="no-tasks">No tasks yet. Add one above!</p>
+      {:else}
+        <ul>
+          {#each tasks as task (task.id)}
+            <li class="task-item">
+              <span class="task-title">{task.title}</span>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </div>
   </div>
 </main>
 
 <style>
+  main {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .todo-app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
 
   #logo {
     display: block;
-    width: 50%;
-    height: 50%;
-    margin: auto;
-    padding: 10% 0 0;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-    background-origin: content-box;
+    width: 120px;
+    height: auto;
+    margin: 0 auto 20px;
   }
 
-  .result {
-    height: 20px;
-    line-height: 20px;
-    margin: 1.5rem auto;
+  h1 {
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
   }
 
-  .input-box .btn {
-    width: 60px;
-    height: 30px;
-    line-height: 30px;
-    border-radius: 3px;
-    border: none;
-    margin: 0 0 0 20px;
-    padding: 0 8px;
-    cursor: pointer;
+  .add-task {
+    display: flex;
+    width: 100%;
+    margin-bottom: 20px;
   }
 
-  .input-box .btn:hover {
-    background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
-    color: #333333;
-  }
-
-  .input-box .input {
-    border: none;
-    border-radius: 3px;
+  .input {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 4px;
     outline: none;
-    height: 30px;
-    line-height: 30px;
-    padding: 0 10px;
-    background-color: rgba(240, 240, 240, 1);
-    -webkit-font-smoothing: antialiased;
+    height: 40px;
+    line-height: 40px;
+    padding: 0 15px;
+    font-size: 16px;
+    background-color: #f9f9f9;
   }
 
-  .input-box .input:hover {
+  .input:focus {
+    border-color: #4a90e2;
+    background-color: #fff;
+  }
+
+  .btn {
+    height: 40px;
+    padding: 0 15px;
+    margin-left: 10px;
+    background-color: #4a90e2;
+    color: white;
     border: none;
-    background-color: rgba(255, 255, 255, 1);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
   }
 
-  .input-box .input:focus {
-    border: none;
-    background-color: rgba(255, 255, 255, 1);
+  .btn:hover {
+    background-color: #357abD;
   }
 
+  .task-list {
+    width: 100%;
+  }
+
+  .no-tasks {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+  }
+
+  ul {
+    list-style-type: none;
+    padding: 0;
+    width: 100%;
+  }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .task-title {
+    flex: 1;
+    font-size: 16px;
+    color: #333;
+  }
 </style>
