@@ -1,4 +1,4 @@
-export namespace backend {
+export namespace models {
 	
 	export class Task {
 	    id: number;

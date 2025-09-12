@@ -2,20 +2,28 @@ package backend
 
 import (
 	"context"
+	"dmarktodo/backend/models"
+	"dmarktodo/backend/repository"
+	"dmarktodo/backend/repository/inmemory"
+	"log"
+	"path/filepath"
 )
 
 // App struct
 type App struct {
-	ctx    context.Context
-	tasks  []Task
-	nextID int
+	ctx  context.Context
+	repo repository.Repository
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
+	repo, err := inmemory.NewRepository(filepath.Join("data", "tasks.txt"))
+	if err != nil {
+		log.Fatalf("Failed to create repository: %v", err)
+	}
 	return &App{
-		tasks:  []Task{},
-		nextID: 1,
+		ctx:  nil,
+		repo: repo,
 	}
 }
 
@@ -25,23 +33,16 @@ func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-type Task struct {
-	ID    int    `json:"id"`
-	Title string `json:"title"`
+func (a *App) GetTasks() []models.Task {
+	return a.repo.GetTasks()
 }
 
-func (a *App) GetTasks() []Task {
-	return a.tasks
+// AddTask adds a new task and returns it
+func (a *App) AddTask(title string) models.Task {
+	return a.repo.AddTask(title)
 }
 
-func (a *App) AddTask(title string) Task {
-	task := Task{
-		ID:    a.nextID,
-		Title: title,
-	}
-
-	a.tasks = append(a.tasks, task)
-	a.nextID++
-
-	return task
+// DeleteTask deletes a task by ID and returns true if successful
+func (a *App) DeleteTask(id int) bool {
+	return a.repo.DeleteTask(id)
 }

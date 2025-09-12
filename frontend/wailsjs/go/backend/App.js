@@ -6,6 +6,10 @@ export function AddTask(arg1) {
   return window['go']['backend']['App']['AddTask'](arg1);
 }
 
+export function DeleteTask(arg1) {
+  return window['go']['backend']['App']['DeleteTask'](arg1);
+}
+
 export function GetTasks() {
   return window['go']['backend']['App']['GetTasks']();
 }

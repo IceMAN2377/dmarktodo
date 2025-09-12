@@ -30,6 +30,22 @@
     }
   }
   
+  // Function to delete a task
+  async function deleteTask(id) {
+    try {
+      // Call the Go function directly using the window object
+      const success = await window.go.backend.App.DeleteTask(id);
+      if (success) {
+        // Remove the task from the local array
+        tasks = tasks.filter(task => task.id !== id);
+      } else {
+        console.error("Failed to delete task with ID:", id);
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    }
+  }
+  
   // Load tasks when the component is mounted
   getTasks();
 </script>
@@ -57,7 +73,9 @@
         <ul>
           {#each tasks as task (task.id)}
             <li class="task-item">
+              <span class="task-id">#{task.id}</span>
               <span class="task-title">{task.title}</span>
+              <button class="delete-btn" on:click={() => deleteTask(task.id)}>Delete</button>
             </li>
           {/each}
         </ul>
@@ -158,9 +176,30 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
+  .task-id {
+    font-size: 14px;
+    color: #888;
+    margin-right: 10px;
+    min-width: 30px;
+  }
+
   .task-title {
     flex: 1;
     font-size: 16px;
     color: #333;
+  }
+  
+  .delete-btn {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  .delete-btn:hover {
+    background-color: #e60000;
   }
 </style>
