@@ -2,6 +2,7 @@ package main
 
 import (
 	"dmarktodo/backend"
+	"dmarktodo/backend/config"
 	"embed"
 
 	"github.com/wailsapp/wails/v2"
@@ -13,8 +14,10 @@ import (
 var assets embed.FS
 
 func main() {
+
+	cfg := config.NewConfig()
 	// Create an instance of the app structure
-	app := backend.NewApp()
+	app := backend.NewApp(cfg)
 
 	// Create application with options
 	err := wails.Run(&options.App{
