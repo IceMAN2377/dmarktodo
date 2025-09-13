@@ -7,9 +7,13 @@ import (
 	"dmarktodo/backend/models"
 	"dmarktodo/backend/repository"
 	"dmarktodo/backend/repository/postgres"
+	"errors"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"log/slog"
+	"os"
+	"strings"
 
 	"fmt"
 	"github.com/jmoiron/sqlx"
@@ -25,12 +29,16 @@ const (
 
 // App struct
 type App struct {
-	ctx  context.Context
-	repo repository.Repository
+	ctx    context.Context
+	logger *slog.Logger
+	repo   repository.Repository
 }
 
 // NewApp creates a new App application struct
 func NewApp(config *config.Config) *App {
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		config.PostgresHost, config.PostgresPort, config.PostgresUser, config.PostgresPassword, config.PostgresDb, config.PostgresSslMode)
 
@@ -46,15 +54,16 @@ func NewApp(config *config.Config) *App {
 	if config.PostgresMigrate {
 		if m, err := migrate.New("file://"+migrationsPath, dbURI); err != nil {
 			panic("failed to create migrate object: " + err.Error())
-		} else if err = m.Up(); err != nil {
+		} else if err = m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 			panic("failed to apply migrations: " + err.Error())
 		}
 	}
 
-	repo := postgres.NewRepository(psql)
+	repo := postgres.NewRepository(logger, psql)
 	return &App{
-		ctx:  nil,
-		repo: repo,
+		ctx:    nil,
+		logger: logger,
+		repo:   repo,
 	}
 }
 
@@ -69,7 +78,12 @@ func (a *App) GetTasks() []models.Task {
 }
 
 // AddTask adds a new task and returns it
-func (a *App) AddTask(title string) models.Task {
+func (a *App) AddTask(title string) (models.Task, error) {
+
+	if strings.TrimSpace(title) == "" {
+		a.logger.Error("title cannot be blank")
+		return models.Task{}, errors.New("title cannot be blank")
+	}
 	return a.repo.AddTask(title)
 }
 

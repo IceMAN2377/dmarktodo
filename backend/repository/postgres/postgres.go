@@ -4,17 +4,19 @@ import (
 	"dmarktodo/backend/models"
 	"dmarktodo/backend/repository"
 	"github.com/jmoiron/sqlx"
-	"log"
+	"log/slog"
 	"time"
 )
 
 type postgres struct {
-	db *sqlx.DB
+	logger *slog.Logger
+	db     *sqlx.DB
 }
 
-func NewRepository(db *sqlx.DB) repository.Repository {
+func NewRepository(logger *slog.Logger, db *sqlx.DB) repository.Repository {
 	return &postgres{
-		db: db,
+		logger: logger,
+		db:     db,
 	}
 }
 
@@ -24,13 +26,13 @@ func (p *postgres) GetTasks() []models.Task {
 	if err != nil {
 		// In a real application, you would handle this error properly
 		// For now, we'll just log it and return an empty slice
-		log.Printf("Error fetching tasks: %v", err)
+		p.logger.Error("Error fetching tasks")
 		return []models.Task{}
 	}
 	return tasks
 }
 
-func (p *postgres) AddTask(title string) models.Task {
+func (p *postgres) AddTask(title string) (models.Task, error) {
 	// Create a new task with default values
 	now := time.Now()
 	task := models.Task{
@@ -58,12 +60,12 @@ func (p *postgres) AddTask(title string) models.Task {
 
 	if err != nil {
 		// In a real application, you would handle this error properly
-		log.Printf("Error adding task: %v", err)
+		p.logger.Error("Error adding task")
 		// Return an empty task in case of error
-		return models.Task{}
+		return models.Task{}, nil
 	}
 
-	return task
+	return task, nil
 }
 
 func (p *postgres) DeleteTask(id int) bool {
@@ -71,14 +73,14 @@ func (p *postgres) DeleteTask(id int) bool {
 	query := "DELETE FROM tasks WHERE id = $1"
 	result, err := p.db.Exec(query, id)
 	if err != nil {
-		log.Printf("Error deleting task: %v", err)
+		p.logger.Error("Error deleting task")
 		return false
 	}
 
 	// Check if any rows were affected (task was found and deleted)
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Printf("Error getting rows affected: %v", err)
+		p.logger.Error("Error getting rows affected")
 		return false
 	}
 
