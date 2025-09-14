@@ -1,8 +1,10 @@
 package postgres
 
 import (
+	"database/sql"
 	"dmarktodo/backend/models"
 	"dmarktodo/backend/repository"
+	"errors"
 	"github.com/jmoiron/sqlx"
 	"log/slog"
 	"time"
@@ -24,10 +26,10 @@ func (p *postgres) GetTasks() []models.Task {
 	var tasks []models.Task
 	err := p.db.Select(&tasks, "SELECT * FROM tasks ORDER BY id")
 	if err != nil {
-		// In a real application, you would handle this error properly
-		// For now, we'll just log it and return an empty slice
-		p.logger.Error("Error fetching tasks")
-		return []models.Task{}
+		if errors.Is(err, sql.ErrNoRows) {
+			p.logger.Info("No tasks found - this is normal for a new database")
+			return []models.Task{}
+		}
 	}
 	return tasks
 }
@@ -86,4 +88,23 @@ func (p *postgres) DeleteTask(id int) bool {
 
 	// Return true if at least one row was affected
 	return rowsAffected > 0
+}
+
+func (p *postgres) ToggleStatus(id int, status models.Status) (models.Task, error) {
+	query := `UPDATE tasks
+SET status = CASE 
+    WHEN status = 'Active' THEN 'Done'
+    ELSE 'Active'
+END,
+updated_at = NOW()
+WHERE id = $1
+RETURNING id;`
+
+	var task models.Task
+
+	err := p.db.QueryRow(query, id, status).Scan(&task.ID)
+	if err != nil {
+		p.logger.Error("Error updating task")
+	}
+	return task, err
 }

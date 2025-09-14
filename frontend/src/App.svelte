@@ -5,6 +5,22 @@
   // Define the Task interface
   let tasks = [];
   let newTaskTitle = "";
+  let showModal = false;
+  let modalMessage = "";
+  let modalType = "error";
+
+  // Function to show modal
+  function showAlert(message, type = "error") {
+    modalMessage = message;
+    modalType = type;
+    showModal = true;
+  }
+
+  // Function to close modal
+  function closeModal() {
+    showModal = false;
+    modalMessage = "";
+  }
 
   // Function to get all tasks
   async function getTasks() {
@@ -22,12 +38,17 @@
     } catch (error) {
       console.error("Error fetching tasks:", error);
       tasks = [];
+
     }
   }
 
   // Function to add a new task
   async function addTask() {
-    if (newTaskTitle.trim() === "") return;
+    // Проверяем на пустую строку
+    if (newTaskTitle.trim() === "") {
+      showAlert("Пожалуйста, введите название задачи!", "warning");
+      return;
+    }
 
     try {
       const newTask = await AddTask(newTaskTitle);
@@ -36,12 +57,13 @@
       // Перезагружаем все задачи после добавления
       await getTasks();
 
+
       newTaskTitle = "";
     } catch (error) {
       console.error("Error adding task:", error);
+      showAlert("Ошибка при добавлении задачи", "error");
     }
   }
-
 
   // Function to delete a task
   async function deleteTask(id) {
@@ -56,17 +78,29 @@
         }
         // Перезагружаем все задачи после удаления
         await getTasks();
+        showAlert("Задача успешно удалена!", "success");
       } else {
         console.error("Failed to delete task with ID:", id);
+        showAlert("Не удалось удалить задачу", "error");
       }
     } catch (error) {
       console.error("Error deleting task:", error);
+      showAlert("Ошибка при удалении задачи", "error");
+    }
+  }
+
+  // Handle keydown for modal (close on Escape)
+  function handleKeydown(event) {
+    if (event.key === 'Escape' && showModal) {
+      closeModal();
     }
   }
 
   // Load tasks when the component is mounted
   getTasks();
 </script>
+
+<svelte:window on:keydown={handleKeydown} />
 
 <main>
   <div class="todo-app">
@@ -108,6 +142,24 @@
       <button class="btn" on:click={getTasks}>Refresh Tasks</button>
     </div>
   </div>
+
+  <!-- Modal -->
+  {#if showModal}
+    <div class="modal-overlay" on:click={closeModal}>
+      <div class="modal modal-{modalType}" on:click|stopPropagation>
+        <div class="modal-header">
+          <h3>{modalType === 'error' ? '⚠️ Ошибка' : modalType === 'warning' ? '⚠️ Внимание' : '✅ Успешно'}</h3>
+          <button class="modal-close" on:click={closeModal}>×</button>
+        </div>
+        <div class="modal-body">
+          <p>{modalMessage}</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-modal" on:click={closeModal}>ОК</button>
+        </div>
+      </div>
+    </div>
+  {/if}
 </main>
 
 <style>
@@ -122,6 +174,123 @@
     flex-direction: column;
     align-items: center;
     width: 100%;
+  }
+
+  /* Modal styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .modal {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 400px;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .modal-error {
+    border-top: 4px solid #f44336;
+  }
+
+  .modal-warning {
+    border-top: 4px solid #ff9800;
+  }
+
+  .modal-success {
+    border-top: 4px solid #4caf50;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 20px 10px 20px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #999;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .modal-close:hover {
+    background-color: #f5f5f5;
+    color: #666;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-body p {
+    margin: 0;
+    color: #666;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .modal-footer {
+    padding: 10px 20px 20px 20px;
+    text-align: right;
+  }
+
+  .btn-modal {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .btn-modal:hover {
+    background-color: #357abd;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   #logo {

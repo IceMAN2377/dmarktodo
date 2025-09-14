@@ -91,3 +91,7 @@ func (a *App) AddTask(title string) (models.Task, error) {
 func (a *App) DeleteTask(id int) bool {
 	return a.repo.DeleteTask(id)
 }
+
+func (a *App) ToggleStatus(id int, status models.Status) (models.Task, error) {
+	return a.repo.ToggleStatus(id, status)
+}
