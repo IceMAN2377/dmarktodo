@@ -7,3 +7,5 @@ export function AddTask(arg1:string):Promise<models.Task>;
 export function DeleteTask(arg1:number):Promise<boolean>;
 
 export function GetTasks():Promise<Array<models.Task>>;
+
+export function ToggleStatus(arg1:number,arg2:models.Status):Promise<models.Task>;

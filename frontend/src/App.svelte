@@ -1,6 +1,6 @@
 <script>
   import logo from './assets/images/logo-universal.png'
-  import { GetTasks, AddTask, DeleteTask } from '../wailsjs/go/backend/App.js';
+  import { GetTasks, AddTask, DeleteTask, ToggleStatus } from '../wailsjs/go/backend/App.js';
 
   // Define the Task interface
   let tasks = [];
@@ -8,6 +8,10 @@
   let showModal = false;
   let modalMessage = "";
   let modalType = "error";
+
+  // Computed properties for active and completed tasks
+  $: activeTasks = tasks.filter(task => task.status === 'active');
+  $: completedTasks = tasks.filter(task => task.status === 'done');
 
   // Function to show modal
   function showAlert(message, type = "error") {
@@ -38,7 +42,6 @@
     } catch (error) {
       console.error("Error fetching tasks:", error);
       tasks = [];
-
     }
   }
 
@@ -57,8 +60,8 @@
       // Перезагружаем все задачи после добавления
       await getTasks();
 
-
       newTaskTitle = "";
+      showAlert("Задача успешно добавлена!", "success");
     } catch (error) {
       console.error("Error adding task:", error);
       showAlert("Ошибка при добавлении задачи", "error");
@@ -72,11 +75,6 @@
       console.log("Delete result:", success, "for task ID:", id);
 
       if (success) {
-        tasks = tasks.filter(task => task.id !== id);
-        if (tasks.length === 0) {
-          tasks = [];
-        }
-        // Перезагружаем все задачи после удаления
         await getTasks();
         showAlert("Задача успешно удалена!", "success");
       } else {
@@ -86,6 +84,25 @@
     } catch (error) {
       console.error("Error deleting task:", error);
       showAlert("Ошибка при удалении задачи", "error");
+    }
+  }
+
+  // Function to toggle task status
+  async function toggleTaskStatus(id, Status) {
+    try {
+      console.log("Toggling status for task:", id, "current status:", Status);
+
+      const updatedTask = await ToggleStatus(id, Status);
+      console.log("Task status updated:", updatedTask);
+
+      // Перезагружаем все задачи после изменения статуса
+      await getTasks();
+
+      const statusText = Status === 'active' ? 'выполненной' : 'активной';
+      showAlert(`Задача отмечена как ${statusText}!`, "success");
+    } catch (error) {
+      console.error("Error toggling task status:", error);
+      showAlert("Ошибка при изменении статуса задачи", "error");
     }
   }
 
@@ -118,28 +135,93 @@
       <button class="btn" on:click={addTask}>Add Task</button>
     </div>
 
-    <div class="task-list">
-      {#if tasks.length === 0}
-        <p class="no-tasks">No tasks yet. Add one above!</p>
-      {:else}
-        <ul>
-          {#each tasks as task (task.id)}
-            <li class="task-item">
-              <span class="task-id">#{task.id}</span>
-              <span class="task-title">{task.title}</span>
-              <span class="task-status status-{task.status}">{task.status}</span>
-              <span class="task-priority priority-{task.priority}">{task.priority}</span>
-              <button class="delete-btn" on:click={() => deleteTask(task.id)}>Delete</button>
-            </li>
-          {/each}
-        </ul>
-      {/if}
+    <div class="tasks-container">
+      <!-- Active Tasks Section -->
+      <div class="tasks-section">
+        <h2>Активные задачи ({activeTasks.length})</h2>
+        <div class="task-list">
+          {#if activeTasks.length === 0}
+            <p class="no-tasks">Нет активных задач</p>
+          {:else}
+            <ul>
+              {#each activeTasks as task (task.id)}
+                <li class="task-item task-active">
+                  <div class="task-info">
+                    <span class="task-id">#{task.id}</span>
+                    <span class="task-title">{task.title}</span>
+                    <span class="task-priority priority-{task.priority}">{task.priority}</span>
+                  </div>
+                  <div class="task-actions">
+                    <button
+                            class="complete-btn"
+                            on:click={() => toggleTaskStatus(task.id, task.status)}
+                            title="Отметить как выполненную"
+                    >
+                      ✓
+                    </button>
+                    <button
+                            class="delete-btn"
+                            on:click={() => deleteTask(task.id)}
+                            title="Удалить задачу"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Completed Tasks Section -->
+      <div class="tasks-section">
+        <h2>Выполненные задачи ({completedTasks.length})</h2>
+        <div class="task-list">
+          {#if completedTasks.length === 0}
+            <p class="no-tasks">Нет выполненных задач</p>
+          {:else}
+            <ul>
+              {#each completedTasks as task (task.id)}
+                <li class="task-item task-completed">
+                  <div class="task-info">
+                    <span class="task-id">#{task.id}</span>
+                    <span class="task-title completed-title">{task.title}</span>
+                    <span class="task-priority priority-{task.priority}">{task.priority}</span>
+                    {#if task.completed_at}
+                      <span class="completed-date">
+                        Выполнено: {new Date(task.completed_at).toLocaleDateString('ru-RU')}
+                      </span>
+                    {/if}
+                  </div>
+                  <div class="task-actions">
+                    <button
+                            class="reactivate-btn"
+                            on:click={() => toggleTaskStatus(task.id, task.status)}
+                            title="Вернуть в активные"
+                    >
+                      ↶
+                    </button>
+                    <button
+                            class="delete-btn"
+                            on:click={() => deleteTask(task.id)}
+                            title="Удалить задачу"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
+      </div>
     </div>
 
     <!-- Debug info -->
     <div class="debug-info">
-      <p>Total tasks: {tasks.length}</p>
-      <button class="btn" on:click={getTasks}>Refresh Tasks</button>
+      <p>Всего задач: {tasks.length} | Активных: {activeTasks.length} | Выполненных: {completedTasks.length}</p>
+      <button class="btn" on:click={getTasks}>Обновить задачи</button>
     </div>
   </div>
 
@@ -164,7 +246,7 @@
 
 <style>
   main {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
   }
@@ -174,6 +256,31 @@
     flex-direction: column;
     align-items: center;
     width: 100%;
+  }
+
+  .tasks-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .tasks-section {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 20px;
+    min-height: 300px;
+  }
+
+  .tasks-section h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #fff;
+    font-size: 18px;
+    text-align: center;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
   }
 
   /* Modal styles */
@@ -301,7 +408,7 @@
   }
 
   h1 {
-    color: #333;
+    color: #fff;
     margin-bottom: 20px;
     text-align: center;
   }
@@ -309,24 +416,30 @@
   .add-task {
     display: flex;
     width: 100%;
+    max-width: 500px;
     margin-bottom: 20px;
   }
 
   .input {
     flex: 1;
-    border: 1px solid #ddd;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;
     outline: none;
     height: 40px;
     line-height: 40px;
     padding: 0 15px;
     font-size: 16px;
-    background-color: #f9f9f9;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+
+  .input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
   }
 
   .input:focus {
     border-color: #4a90e2;
-    background-color: #fff;
+    background-color: rgba(255, 255, 255, 0.15);
   }
 
   .btn {
@@ -342,7 +455,7 @@
   }
 
   .btn:hover {
-    background-color: #357abD;
+    background-color: #357abd;
   }
 
   .task-list {
@@ -351,8 +464,9 @@
 
   .no-tasks {
     text-align: center;
-    color: #888;
+    color: rgba(255, 255, 255, 0.6);
     font-style: italic;
+    margin-top: 20px;
   }
 
   ul {
@@ -364,94 +478,168 @@
   .task-item {
     display: flex;
     align-items: center;
-    padding: 12px 15px;
-    background-color: #f9f9f9;
-    border-radius: 4px;
+    justify-content: space-between;
+    padding: 15px;
+    border-radius: 8px;
     margin-bottom: 10px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  .task-active {
+    background-color: rgba(74, 144, 226, 0.1);
+    border-color: rgba(74, 144, 226, 0.3);
+  }
+
+  .task-completed {
+    background-color: rgba(76, 175, 80, 0.1);
+    border-color: rgba(76, 175, 80, 0.3);
+  }
+
+  .task-info {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 10px;
+  }
+
+  .task-actions {
+    display: flex;
+    gap: 8px;
   }
 
   .task-id {
-    font-size: 14px;
-    color: #888;
-    margin-right: 10px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
     min-width: 30px;
   }
 
   .task-title {
-    flex: 1;
     font-size: 16px;
-    color: #333;
-    margin-right: 10px;
+    color: #fff;
+    flex: 1;
   }
 
-  .task-status {
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 12px;
-    margin-right: 10px;
-    text-transform: uppercase;
-    font-weight: bold;
-  }
-
-  .status-active {
-    background-color: #e3f2fd;
-    color: #1976d2;
-  }
-
-  .status-done {
-    background-color: #e8f5e8;
-    color: #388e3c;
+  .completed-title {
+    text-decoration: line-through;
+    color: rgba(255, 255, 255, 0.7);
   }
 
   .task-priority {
     font-size: 12px;
-    padding: 2px 8px;
+    padding: 3px 8px;
     border-radius: 12px;
-    margin-right: 10px;
     text-transform: uppercase;
     font-weight: bold;
   }
 
   .priority-low {
-    background-color: #f3e5f5;
-    color: #7b1fa2;
+    background-color: rgba(156, 39, 176, 0.2);
+    color: #ce93d8;
   }
 
   .priority-medium {
-    background-color: #fff3e0;
-    color: #f57c00;
+    background-color: rgba(255, 152, 0, 0.2);
+    color: #ffcc02;
   }
 
   .priority-high {
-    background-color: #ffebee;
-    color: #d32f2f;
+    background-color: rgba(244, 67, 54, 0.2);
+    color: #ff8a80;
+  }
+
+  .completed-date {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .complete-btn {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+  }
+
+  .complete-btn:hover {
+    background-color: #45a049;
+  }
+
+  .reactivate-btn {
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+  }
+
+  .reactivate-btn:hover {
+    background-color: #f57c00;
   }
 
   .delete-btn {
-    background-color: #ff4d4d;
+    background-color: #f44336;
     color: white;
     border: none;
-    border-radius: 4px;
-    padding: 5px 10px;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
   }
 
   .delete-btn:hover {
-    background-color: #e60000;
+    background-color: #e53935;
   }
 
   .debug-info {
-    margin-top: 20px;
-    padding: 10px;
-    background-color: #f0f0f0;
-    border-radius: 4px;
-    color: #333;
+    margin-top: 30px;
+    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.8);
+    width: 100%;
+    text-align: center;
   }
 
   .debug-info p {
     margin: 5px 0;
     font-size: 14px;
+  }
+
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .tasks-container {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .task-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .task-actions {
+      align-self: flex-end;
+    }
   }
 </style>

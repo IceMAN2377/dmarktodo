@@ -91,20 +91,39 @@ func (p *postgres) DeleteTask(id int) bool {
 }
 
 func (p *postgres) ToggleStatus(id int, status models.Status) (models.Task, error) {
-	query := `UPDATE tasks
-SET status = CASE 
-    WHEN status = 'Active' THEN 'Done'
-    ELSE 'Active'
-END,
-updated_at = NOW()
-WHERE id = $1
-RETURNING id;`
+	var newStatus models.Status
+	var completedAt *time.Time
+
+	if status == models.StatusActive {
+		newStatus = models.StatusDone
+		now := time.Now()
+		completedAt = &now
+	} else {
+		newStatus = models.StatusActive
+		completedAt = nil
+	}
+
+	// Обновляем статус задачи
+	query := `UPDATE tasks 
+		SET status = $1, completed_at = $2, updated_at = NOW() 
+		WHERE id = $3 
+		RETURNING id, title, status, priority, completed_at, created_at, updated_at`
 
 	var task models.Task
+	err := p.db.QueryRow(query, newStatus, completedAt, id).Scan(
+		&task.ID,
+		&task.Title,
+		&task.Status,
+		&task.Priority,
+		&task.CompletedAt,
+		&task.CreatedAt,
+		&task.UpdatedAt,
+	)
 
-	err := p.db.QueryRow(query, id, status).Scan(&task.ID)
 	if err != nil {
-		p.logger.Error("Error updating task")
+		p.logger.Error("Error updating task status", "error", err, "id", id)
+		return models.Task{}, err
 	}
-	return task, err
+
+	return task, nil
 }
