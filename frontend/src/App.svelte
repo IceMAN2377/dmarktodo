@@ -9,9 +9,23 @@
   let modalMessage = "";
   let modalType = "error";
 
+  // Priority selection state
+  let showPriorityModal = false;
+  let selectedPriority = "medium";
+
+  // Filter state
+  let currentFilter = "all"; // "all", "active", "done"
+
+  // Sort state
+  let sortByNewest = true; // true = newest first (DESC), false = oldest first (ASC)
+
   // Computed properties for active and completed tasks
   $: activeTasks = tasks.filter(task => task.status === 'active');
   $: completedTasks = tasks.filter(task => task.status === 'done');
+
+  // Computed property for filtered tasks based on current filter
+  $: filteredTasks = currentFilter === "all" ? tasks :
+                     currentFilter === "active" ? activeTasks : completedTasks;
 
   // Function to show modal
   function showAlert(message, type = "error") {
@@ -26,10 +40,21 @@
     modalMessage = "";
   }
 
+  // Function to show priority modal
+  function showPrioritySelection() {
+    showPriorityModal = true;
+  }
+
+  // Function to close priority modal
+  function closePriorityModal() {
+    showPriorityModal = false;
+    selectedPriority = "medium";
+  }
+
   // Function to get all tasks
   async function getTasks() {
     try {
-      const fetchedTasks = await GetTasks();
+      const fetchedTasks = await GetTasks(sortByNewest);
       console.log("Loaded tasks:", fetchedTasks);
 
       // Принудительно обновляем массив задач
@@ -45,26 +70,40 @@
     }
   }
 
-  // Function to add a new task
-  async function addTask() {
+  // Function to toggle sort order
+  async function toggleSort() {
+    sortByNewest = !sortByNewest;
+    await getTasks();
+  }
+
+  // Function to start adding a task
+  async function startAddTask() {
     // Проверяем на пустую строку
     if (newTaskTitle.trim() === "") {
       showAlert("Пожалуйста, введите название задачи!", "warning");
       return;
     }
 
+    // Показываем модалку выбора приоритета
+    showPrioritySelection();
+  }
+
+  // Function to add a new task with priority
+  async function addTaskWithPriority() {
     try {
-      const newTask = await AddTask(newTaskTitle);
+      const newTask = await AddTask(newTaskTitle, selectedPriority);
       console.log("Added task:", newTask);
 
       // Перезагружаем все задачи после добавления
       await getTasks();
 
       newTaskTitle = "";
+      closePriorityModal();
       showAlert("Задача успешно добавлена!", "success");
     } catch (error) {
       console.error("Error adding task:", error);
       showAlert("Ошибка при добавлении задачи", "error");
+      closePriorityModal();
     }
   }
 
@@ -108,8 +147,13 @@
 
   // Handle keydown for modal (close on Escape)
   function handleKeydown(event) {
-    if (event.key === 'Escape' && showModal) {
-      closeModal();
+    if (event.key === 'Escape') {
+      if (showModal) {
+        closeModal();
+      }
+      if (showPriorityModal) {
+        closePriorityModal();
+      }
     }
   }
 
@@ -129,83 +173,95 @@
               type="text"
               placeholder="Enter a new task..."
               bind:value={newTaskTitle}
-              on:keypress={(e) => e.key === 'Enter' && addTask()}
+              on:keypress={(e) => e.key === 'Enter' && startAddTask()}
               class="input"
       />
-      <button class="btn" on:click={addTask}>Add Task</button>
+      <button class="btn" on:click={startAddTask}>Add Task</button>
     </div>
 
-    <div class="tasks-container">
-      <!-- Active Tasks Section -->
-      <div class="tasks-section">
-        <h2>Активные задачи ({activeTasks.length})</h2>
-        <div class="task-list">
-          {#if activeTasks.length === 0}
-            <p class="no-tasks">Нет активных задач</p>
-          {:else}
-            <ul>
-              {#each activeTasks as task (task.id)}
-                <li class="task-item task-active">
-                  <div class="task-info">
-                    <span class="task-id">#{task.id}</span>
-                    <span class="task-title">{task.title}</span>
-                    <span class="task-priority priority-{task.priority}">{task.priority}</span>
-                  </div>
-                  <div class="task-actions">
-                    <button
-                            class="complete-btn"
-                            on:click={() => toggleTaskStatus(task.id, task.status)}
-                            title="Отметить как выполненную"
-                    >
-                      ✓
-                    </button>
-                    <button
-                            class="delete-btn"
-                            on:click={() => deleteTask(task.id)}
-                            title="Удалить задачу"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </li>
-              {/each}
-            </ul>
-          {/if}
-        </div>
-      </div>
+    <!-- Filter buttons -->
+    <div class="filter-buttons">
+      <button
+        class="filter-btn {currentFilter === 'all' ? 'active' : ''}"
+        on:click={() => currentFilter = 'all'}
+      >
+        Все ({tasks.length})
+      </button>
+      <button
+        class="filter-btn {currentFilter === 'active' ? 'active' : ''}"
+        on:click={() => currentFilter = 'active'}
+      >
+        Активные ({activeTasks.length})
+      </button>
+      <button
+        class="filter-btn {currentFilter === 'done' ? 'active' : ''}"
+        on:click={() => currentFilter = 'done'}
+      >
+        Выполненные ({completedTasks.length})
+      </button>
+    </div>
 
-      <!-- Completed Tasks Section -->
+    <!-- Sort buttons -->
+    <div class="sort-buttons">
+      <button
+        class="sort-btn {sortByNewest ? 'active' : ''}"
+        on:click={toggleSort}
+        title="Сортировать по времени создания"
+      >
+        {sortByNewest ? '🔽 Новые сначала' : '🔼 Старые сначала'}
+      </button>
+    </div>
+
+    <!-- Tasks list -->
+    <div class="tasks-container">
       <div class="tasks-section">
-        <h2>Выполненные задачи ({completedTasks.length})</h2>
         <div class="task-list">
-          {#if completedTasks.length === 0}
-            <p class="no-tasks">Нет выполненных задач</p>
+          {#if filteredTasks.length === 0}
+            <p class="no-tasks">
+              {#if currentFilter === 'all'}
+                Нет задач
+              {:else if currentFilter === 'active'}
+                Нет активных задач
+              {:else}
+                Нет выполненных задач
+              {/if}
+            </p>
           {:else}
             <ul>
-              {#each completedTasks as task (task.id)}
-                <li class="task-item task-completed">
+              {#each filteredTasks as task (task.id)}
+                <li class="task-item {task.status === 'active' ? 'task-active' : 'task-completed'}">
                   <div class="task-info">
                     <span class="task-id">#{task.id}</span>
-                    <span class="task-title completed-title">{task.title}</span>
+                    <span class="task-title {task.status === 'done' ? 'completed-title' : ''}">{task.title}</span>
                     <span class="task-priority priority-{task.priority}">{task.priority}</span>
-                    {#if task.completed_at}
+                    {#if task.completed_at && task.status === 'done'}
                       <span class="completed-date">
-                        Выполнено: {new Date(task.completed_at).toLocaleDateString('ru-RU')}
+                        Выполнено: {new Date(task.completed_at).toLocaleString('ru-RU')}
                       </span>
                     {/if}
                   </div>
                   <div class="task-actions">
+                    {#if task.status === 'active'}
+                      <button
+                        class="complete-btn"
+                        on:click={() => toggleTaskStatus(task.id, task.status)}
+                        title="Отметить как выполненную"
+                      >
+                        ✓
+                      </button>
+                    {:else}
+                      <button
+                        class="reactivate-btn"
+                        on:click={() => toggleTaskStatus(task.id, task.status)}
+                        title="Вернуть в активные"
+                      >
+                        ↶
+                      </button>
+                    {/if}
                     <button
-                            class="reactivate-btn"
-                            on:click={() => toggleTaskStatus(task.id, task.status)}
-                            title="Вернуть в активные"
-                    >
-                      ↶
-                    </button>
-                    <button
-                            class="delete-btn"
-                            on:click={() => deleteTask(task.id)}
-                            title="Удалить задачу"
+                      class="delete-btn"
+                      on:click={() => deleteTask(task.id)}
+                      title="Удалить задачу"
                     >
                       ✕
                     </button>
@@ -225,7 +281,39 @@
     </div>
   </div>
 
-  <!-- Modal -->
+  <!-- Priority Selection Modal -->
+  {#if showPriorityModal}
+    <div class="modal-overlay" on:click={closePriorityModal}>
+      <div class="modal priority-modal" on:click|stopPropagation>
+        <div class="modal-header">
+          <h3>Выберите приоритет задачи</h3>
+          <button class="modal-close" on:click={closePriorityModal}>×</button>
+        </div>
+        <div class="modal-body">
+          <div class="priority-options">
+            <label class="priority-option">
+              <input type="radio" bind:group={selectedPriority} value="low" />
+              <span class="priority-label priority-low">Низкий</span>
+            </label>
+            <label class="priority-option">
+              <input type="radio" bind:group={selectedPriority} value="medium" />
+              <span class="priority-label priority-medium">Средний</span>
+            </label>
+            <label class="priority-option">
+              <input type="radio" bind:group={selectedPriority} value="high" />
+              <span class="priority-label priority-high">Высокий</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-modal btn-cancel" on:click={closePriorityModal}>Отмена</button>
+          <button class="btn-modal btn-confirm" on:click={addTaskWithPriority}>Добавить</button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Alert Modal -->
   {#if showModal}
     <div class="modal-overlay" on:click={closeModal}>
       <div class="modal modal-{modalType}" on:click|stopPropagation>
@@ -258,12 +346,65 @@
     width: 100%;
   }
 
+  .filter-buttons {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  .filter-btn {
+    padding: 8px 16px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+
+  .filter-btn:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .filter-btn.active {
+    background-color: #4a90e2;
+    border-color: #4a90e2;
+    color: white;
+  }
+
+  .sort-buttons {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+  }
+
+  .sort-btn {
+    padding: 8px 16px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+
+  .sort-btn:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .sort-btn.active {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+  }
+
   .tasks-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
     width: 100%;
-    margin-top: 20px;
+    margin-top: 10px;
   }
 
   .tasks-section {
@@ -305,6 +446,10 @@
     width: 90%;
     max-width: 400px;
     animation: slideUp 0.3s ease-out;
+  }
+
+  .priority-modal {
+    max-width: 450px;
   }
 
   .modal-error {
@@ -364,14 +509,62 @@
     line-height: 1.5;
   }
 
+  .priority-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .priority-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .priority-option:hover {
+    background-color: #f8f9fa;
+    border-color: #ccc;
+  }
+
+  .priority-option input[type="radio"] {
+    margin-right: 10px;
+    cursor: pointer;
+  }
+
+  .priority-label {
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    font-size: 12px;
+    color: white;
+  }
+
+  .priority-low {
+    background-color: #9c27b0;
+  }
+
+  .priority-medium {
+    background-color: #ff9800;
+  }
+
+  .priority-high {
+    background-color: #f44336;
+  }
+
   .modal-footer {
     padding: 10px 20px 20px 20px;
     text-align: right;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
   }
 
   .btn-modal {
-    background-color: #4a90e2;
-    color: white;
     border: none;
     border-radius: 4px;
     padding: 8px 20px;
@@ -380,7 +573,21 @@
     font-weight: 500;
   }
 
-  .btn-modal:hover {
+  .btn-cancel {
+    background-color: #6c757d;
+    color: white;
+  }
+
+  .btn-cancel:hover {
+    background-color: #5a6268;
+  }
+
+  .btn-confirm {
+    background-color: #4a90e2;
+    color: white;
+  }
+
+  .btn-confirm:hover {
     background-color: #357abd;
   }
 
@@ -642,4 +849,4 @@
       align-self: flex-end;
     }
   }
-</style>
+  </style>

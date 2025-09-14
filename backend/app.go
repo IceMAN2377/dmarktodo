@@ -73,18 +73,17 @@ func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-func (a *App) GetTasks() []models.Task {
-	return a.repo.GetTasks()
+func (a *App) GetTasks(sortByCreatedDesc bool) []models.Task {
+	return a.repo.GetTasks(sortByCreatedDesc)
 }
 
 // AddTask adds a new task and returns it
-func (a *App) AddTask(title string) (models.Task, error) {
-
+func (a *App) AddTask(title string, priority models.Priority) (models.Task, error) {
 	if strings.TrimSpace(title) == "" {
 		a.logger.Error("title cannot be blank")
 		return models.Task{}, errors.New("title cannot be blank")
 	}
-	return a.repo.AddTask(title)
+	return a.repo.AddTask(title, priority)
 }
 
 // DeleteTask deletes a task by ID and returns true if successful

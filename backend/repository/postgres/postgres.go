@@ -22,9 +22,15 @@ func NewRepository(logger *slog.Logger, db *sqlx.DB) repository.Repository {
 	}
 }
 
-func (p *postgres) GetTasks() []models.Task {
+func (p *postgres) GetTasks(sortByCreatedDesc bool) []models.Task {
 	var tasks []models.Task
-	err := p.db.Select(&tasks, "SELECT * FROM tasks ORDER BY id")
+	var query string
+	if sortByCreatedDesc {
+		query = "SELECT * FROM tasks ORDER BY created_at DESC"
+	} else {
+		query = "SELECT * FROM tasks ORDER BY created_at ASC"
+	}
+	err := p.db.Select(&tasks, query)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			p.logger.Info("No tasks found - this is normal for a new database")
@@ -34,13 +40,13 @@ func (p *postgres) GetTasks() []models.Task {
 	return tasks
 }
 
-func (p *postgres) AddTask(title string) (models.Task, error) {
+func (p *postgres) AddTask(title string, priority models.Priority) (models.Task, error) {
 	// Create a new task with default values
 	now := time.Now()
 	task := models.Task{
 		Title:     title,
 		Status:    models.StatusActive,
-		Priority:  models.PriorityMedium,
+		Priority:  priority,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
