@@ -36,6 +36,8 @@ func (p *postgres) GetTasks(sortByCreatedDesc bool) []models.Task {
 			p.logger.Info("No tasks found - this is normal for a new database")
 			return []models.Task{}
 		}
+		p.logger.Error("Error fetching tasks", "error", err)
+		return []models.Task{}
 	}
 	return tasks
 }
@@ -67,10 +69,8 @@ func (p *postgres) AddTask(title string, priority models.Priority) (models.Task,
 	).Scan(&task.ID)
 
 	if err != nil {
-		// In a real application, you would handle this error properly
-		p.logger.Error("Error adding task")
-		// Return an empty task in case of error
-		return models.Task{}, nil
+		p.logger.Error("Error adding task", "error", err, "title", title)
+		return models.Task{}, err
 	}
 
 	return task, nil
@@ -81,14 +81,14 @@ func (p *postgres) DeleteTask(id int) bool {
 	query := "DELETE FROM tasks WHERE id = $1"
 	result, err := p.db.Exec(query, id)
 	if err != nil {
-		p.logger.Error("Error deleting task")
+		p.logger.Error("Error deleting task", "error", err, "id", id)
 		return false
 	}
 
 	// Check if any rows were affected (task was found and deleted)
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		p.logger.Error("Error getting rows affected")
+		p.logger.Error("Error getting rows affected", "error", err, "id", id)
 		return false
 	}
 

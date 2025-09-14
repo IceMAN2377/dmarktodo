@@ -17,7 +17,7 @@ func main() {
 	cfg := config.NewConfig()
 
 	// Create an instance of the app structure
-	app := backend.NewApp(cfg)
+	app, _ := backend.NewApp(cfg)
 
 	// Create application with options
 	err := wails.Run(&options.App{
