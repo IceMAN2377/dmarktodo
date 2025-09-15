@@ -2,13 +2,9 @@ module dmarktodo
 
 go 1.23.0
 
-toolchain go1.24.0
-
 require (
-	github.com/caarlos0/env v3.5.0+incompatible
 	github.com/golang-migrate/migrate/v4 v4.19.0
 	github.com/jmoiron/sqlx v1.4.0
-	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/wailsapp/wails/v2 v2.10.2
 )

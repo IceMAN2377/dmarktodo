@@ -1,10 +1,13 @@
 package repository
 
-import "dmarktodo/backend/models"
+import (
+	"dmarktodo/backend/models"
+	"time"
+)
 
 type Repository interface {
 	GetTasks(sortByCreatedDesc bool) []models.Task
-	AddTask(title string, priority models.Priority) (models.Task, error)
+	AddTask(task models.Task) (models.Task, error)
 	DeleteTask(id int) bool
-	ToggleStatus(id int, status models.Status) (models.Task, error)
+	UpdateTask(id int, status models.Status, completedAt *time.Time) (models.Task, error)
 }

@@ -6,6 +6,7 @@ import (
 	"dmarktodo/backend/repository"
 	"log/slog"
 	"strings"
+	"time"
 )
 
 type TaskService interface {
@@ -36,7 +37,18 @@ func (s *taskService) AddTask(title string, priority models.Priority) (models.Ta
 		s.logger.Error("title cannot be blank")
 		return models.Task{}, apperrors.ErrInvalidTitle
 	}
-	return s.repo.AddTask(title, priority)
+
+	// Create task with business logic defaults
+	now := time.Now()
+	task := models.Task{
+		Title:     strings.TrimSpace(title),
+		Status:    models.StatusActive,
+		Priority:  priority,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	return s.repo.AddTask(task)
 }
 
 func (s *taskService) DeleteTask(id int) bool {
@@ -44,5 +56,18 @@ func (s *taskService) DeleteTask(id int) bool {
 }
 
 func (s *taskService) ToggleStatus(id int, status models.Status) (models.Task, error) {
-	return s.repo.ToggleStatus(id, status)
+	// Business logic: determine new status and completedAt
+	var newStatus models.Status
+	var completedAt *time.Time
+
+	if status == models.StatusActive {
+		newStatus = models.StatusDone
+		now := time.Now()
+		completedAt = &now
+	} else {
+		newStatus = models.StatusActive
+		completedAt = nil
+	}
+
+	return s.repo.UpdateTask(id, newStatus, completedAt)
 }

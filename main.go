@@ -4,6 +4,7 @@ import (
 	"dmarktodo/backend"
 	"dmarktodo/backend/config"
 	"embed"
+
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -17,10 +18,14 @@ func main() {
 	cfg := config.NewConfig()
 
 	// Create an instance of the app structure
-	app, _ := backend.NewApp(cfg)
+	app, err := backend.NewApp(cfg)
+	if err != nil {
+		println("Failed to initialize app:", err.Error())
+		return
+	}
 
 	// Create application with options
-	err := wails.Run(&options.App{
+	err = wails.Run(&options.App{
 		Title:  "dmarktodo",
 		Width:  1024,
 		Height: 768,

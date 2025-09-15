@@ -4,7 +4,6 @@ import (
 	"time"
 )
 
-// Статус задачи
 type Status string
 
 const (
@@ -12,7 +11,6 @@ const (
 	StatusDone   Status = "done"
 )
 
-// Приоритет задачи
 type Priority string
 
 const (

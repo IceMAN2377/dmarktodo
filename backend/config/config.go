@@ -1,31 +1,48 @@
 package config
 
 import (
-	"github.com/caarlos0/env"
-	"github.com/joho/godotenv"
+	"os"
+	"strconv"
 )
 
 type Config struct {
-	PostgresMigrate  bool   `env:"POSTGRES_MIGRATE" envDefault:"true"`
-	PostgresHost     string `env:"POSTGRES_HOST,required"`
-	PostgresPort     int    `env:"POSTGRES_PORT,required"`
-	PostgresUser     string `env:"POSTGRES_USER,required"`
-	PostgresPassword string `env:"POSTGRES_PASSWORD,required"`
-	PostgresDb       string `env:"POSTGRES_DB,required"`
-	PostgresSslMode  string `env:"POSTGRES_SSL_MODE" envDefault:"disable"`
+	PostgresMigrate  bool
+	PostgresHost     string
+	PostgresPort     int
+	PostgresUser     string
+	PostgresPassword string
+	PostgresDb       string
+	PostgresSslMode  string
 }
 
-// NewConfig creates a new Config
+// NewConfig creates a new Config with default values for Docker Postgres
 func NewConfig() *Config {
-	cfg := &Config{}
-	if err := cfg.readFromEnvironment(); err != nil {
-		panic(err)
+	cfg := &Config{
+		PostgresMigrate:  true,
+		PostgresHost:     getEnvOrDefault("POSTGRES_HOST", "localhost"),
+		PostgresPort:     getEnvIntOrDefault("POSTGRES_PORT", 5432),
+		PostgresUser:     getEnvOrDefault("POSTGRES_USER", "myuser"),
+		PostgresPassword: getEnvOrDefault("POSTGRES_PASSWORD", "mypassword"),
+		PostgresDb:       getEnvOrDefault("POSTGRES_DB", "todolist"),
+		PostgresSslMode:  getEnvOrDefault("POSTGRES_SSL_MODE", "disable"),
 	}
 	return cfg
 }
 
-// readFromEnvironment reads the settings from environment variables.
-func (c *Config) readFromEnvironment() error {
-	_ = godotenv.Load()
-	return env.Parse(c)
+// getEnvOrDefault gets environment variable or returns default value
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+// getEnvIntOrDefault gets environment variable as int or returns default value
+func getEnvIntOrDefault(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
+	}
+	return defaultValue
 }

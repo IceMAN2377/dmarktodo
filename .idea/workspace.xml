@@ -6,9 +6,15 @@
   <component name="ChangeListManager">
     <list default="true" id="5b0a1d44-e2b9-4868-b9ac-c3545fbb47a3" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/models/models.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/repository/postgres/postgres.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/repository/postgres/postgres.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/repository/repository.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/repository/repository.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/handlers.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/service/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/backend/service/service.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/App.svelte" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.svelte" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -64,6 +70,7 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/build/bin/dmarktodo.app/Contents/MacOS" />
       <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/backend" />
       <recent name="$PROJECT_DIR$/db/migrations" />

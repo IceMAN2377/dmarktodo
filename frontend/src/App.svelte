@@ -13,6 +13,10 @@
   let showPriorityModal = false;
   let selectedPriority = "medium";
 
+  // Confirmation modal state
+  let showConfirmModal = false;
+  let taskToDelete = null;
+
   // Filter state
   let currentFilter = "all"; // "all", "active", "done"
 
@@ -51,16 +55,28 @@
     selectedPriority = "medium";
   }
 
+  // Function to show confirmation modal
+  function showDeleteConfirmation(task) {
+    taskToDelete = task;
+    showConfirmModal = true;
+  }
+
+  // Function to close confirmation modal
+  function closeConfirmModal() {
+    showConfirmModal = false;
+    taskToDelete = null;
+  }
+
   // Function to get all tasks
   async function getTasks() {
     try {
       const fetchedTasks = await GetTasks(sortByNewest);
       console.log("Loaded tasks:", fetchedTasks);
 
-      // Принудительно обновляем массив задач
+      // Force update the tasks array
       tasks = [...fetchedTasks];
 
-      // Если массив пуст, убедимся, что это действительно пустой массив
+      // If array is empty, make sure it's actually an empty array
       if (tasks.length === 0) {
         tasks = [];
       }
@@ -78,13 +94,13 @@
 
   // Function to start adding a task
   async function startAddTask() {
-    // Проверяем на пустую строку
+    // Check for empty string
     if (newTaskTitle.trim() === "") {
-      showAlert("Пожалуйста, введите название задачи!", "warning");
+      showAlert("Please enter a task title!", "warning");
       return;
     }
 
-    // Показываем модалку выбора приоритета
+    // Show priority selection modal
     showPrioritySelection();
   }
 
@@ -94,36 +110,40 @@
       const newTask = await AddTask(newTaskTitle, selectedPriority);
       console.log("Added task:", newTask);
 
-      // Перезагружаем все задачи после добавления
+      // Reload all tasks after adding
       await getTasks();
 
       newTaskTitle = "";
       closePriorityModal();
-      showAlert("Задача успешно добавлена!", "success");
+      showAlert("Task added successfully!", "success");
     } catch (error) {
       console.error("Error adding task:", error);
-      showAlert("Ошибка при добавлении задачи", "error");
+      showAlert("Error adding task", "error");
       closePriorityModal();
     }
   }
 
-  // Function to delete a task
-  async function deleteTask(id) {
+  // Function to confirm and delete a task
+  async function confirmDelete() {
+    if (!taskToDelete) return;
+
     try {
-      const success = await DeleteTask(id);
-      console.log("Delete result:", success, "for task ID:", id);
+      const success = await DeleteTask(taskToDelete.id);
+      console.log("Delete result:", success, "for task ID:", taskToDelete.id);
 
       if (success) {
         await getTasks();
-        showAlert("Задача успешно удалена!", "success");
+        showAlert("Task deleted successfully!", "success");
       } else {
-        console.error("Failed to delete task with ID:", id);
-        showAlert("Не удалось удалить задачу", "error");
+        console.error("Failed to delete task with ID:", taskToDelete.id);
+        showAlert("Failed to delete task", "error");
       }
     } catch (error) {
       console.error("Error deleting task:", error);
-      showAlert("Ошибка при удалении задачи", "error");
+      showAlert("Error deleting task", "error");
     }
+
+    closeConfirmModal();
   }
 
   // Function to toggle task status
@@ -134,14 +154,14 @@
       const updatedTask = await ToggleStatus(id, Status);
       console.log("Task status updated:", updatedTask);
 
-      // Перезагружаем все задачи после изменения статуса
+      // Reload all tasks after status change
       await getTasks();
 
-      const statusText = Status === 'active' ? 'выполненной' : 'активной';
-      showAlert(`Задача отмечена как ${statusText}!`, "success");
+      const statusText = Status === 'active' ? 'completed' : 'active';
+      showAlert(`Task marked as ${statusText}!`, "success");
     } catch (error) {
       console.error("Error toggling task status:", error);
-      showAlert("Ошибка при изменении статуса задачи", "error");
+      showAlert("Error changing task status", "error");
     }
   }
 
@@ -153,6 +173,9 @@
       }
       if (showPriorityModal) {
         closePriorityModal();
+      }
+      if (showConfirmModal) {
+        closeConfirmModal();
       }
     }
   }
@@ -185,19 +208,19 @@
         class="filter-btn {currentFilter === 'all' ? 'active' : ''}"
         on:click={() => currentFilter = 'all'}
       >
-        Все ({tasks.length})
+        All ({tasks.length})
       </button>
       <button
         class="filter-btn {currentFilter === 'active' ? 'active' : ''}"
         on:click={() => currentFilter = 'active'}
       >
-        Активные ({activeTasks.length})
+        Active ({activeTasks.length})
       </button>
       <button
         class="filter-btn {currentFilter === 'done' ? 'active' : ''}"
         on:click={() => currentFilter = 'done'}
       >
-        Выполненные ({completedTasks.length})
+        Completed ({completedTasks.length})
       </button>
     </div>
 
@@ -206,9 +229,9 @@
       <button
         class="sort-btn {sortByNewest ? 'active' : ''}"
         on:click={toggleSort}
-        title="Сортировать по времени создания"
+        title="Sort by creation time"
       >
-        {sortByNewest ? '🔽 Новые сначала' : '🔼 Старые сначала'}
+        {sortByNewest ? '🔽 Newest First' : '🔼 Oldest First'}
       </button>
     </div>
 
@@ -219,11 +242,11 @@
           {#if filteredTasks.length === 0}
             <p class="no-tasks">
               {#if currentFilter === 'all'}
-                Нет задач
+                No tasks
               {:else if currentFilter === 'active'}
-                Нет активных задач
+                No active tasks
               {:else}
-                Нет выполненных задач
+                No completed tasks
               {/if}
             </p>
           {:else}
@@ -236,7 +259,7 @@
                     <span class="task-priority priority-{task.priority}">{task.priority}</span>
                     {#if task.completed_at && task.status === 'done'}
                       <span class="completed-date">
-                        Выполнено: {new Date(task.completed_at).toLocaleString('ru-RU')}
+                        Completed: {new Date(task.completed_at).toLocaleString('en-US')}
                       </span>
                     {/if}
                   </div>
@@ -245,7 +268,7 @@
                       <button
                         class="complete-btn"
                         on:click={() => toggleTaskStatus(task.id, task.status)}
-                        title="Отметить как выполненную"
+                        title="Mark as completed"
                       >
                         ✓
                       </button>
@@ -253,15 +276,15 @@
                       <button
                         class="reactivate-btn"
                         on:click={() => toggleTaskStatus(task.id, task.status)}
-                        title="Вернуть в активные"
+                        title="Mark as active"
                       >
                         ↶
                       </button>
                     {/if}
                     <button
                       class="delete-btn"
-                      on:click={() => deleteTask(task.id)}
-                      title="Удалить задачу"
+                      on:click={() => showDeleteConfirmation(task)}
+                      title="Delete task"
                     >
                       ✕
                     </button>
@@ -274,40 +297,53 @@
       </div>
     </div>
 
-    <!-- Debug info -->
-    <div class="debug-info">
-      <p>Всего задач: {tasks.length} | Активных: {activeTasks.length} | Выполненных: {completedTasks.length}</p>
-      <button class="btn" on:click={getTasks}>Обновить задачи</button>
-    </div>
-  </div>
-
   <!-- Priority Selection Modal -->
   {#if showPriorityModal}
     <div class="modal-overlay" on:click={closePriorityModal}>
       <div class="modal priority-modal" on:click|stopPropagation>
         <div class="modal-header">
-          <h3>Выберите приоритет задачи</h3>
+          <h3>Select Task Priority</h3>
           <button class="modal-close" on:click={closePriorityModal}>×</button>
         </div>
         <div class="modal-body">
           <div class="priority-options">
             <label class="priority-option">
               <input type="radio" bind:group={selectedPriority} value="low" />
-              <span class="priority-label priority-low">Низкий</span>
+              <span class="priority-label priority-low">Low</span>
             </label>
             <label class="priority-option">
               <input type="radio" bind:group={selectedPriority} value="medium" />
-              <span class="priority-label priority-medium">Средний</span>
+              <span class="priority-label priority-medium">Medium</span>
             </label>
             <label class="priority-option">
               <input type="radio" bind:group={selectedPriority} value="high" />
-              <span class="priority-label priority-high">Высокий</span>
+              <span class="priority-label priority-high">High</span>
             </label>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-modal btn-cancel" on:click={closePriorityModal}>Отмена</button>
-          <button class="btn-modal btn-confirm" on:click={addTaskWithPriority}>Добавить</button>
+          <button class="btn-modal btn-cancel" on:click={closePriorityModal}>Cancel</button>
+          <button class="btn-modal btn-confirm" on:click={addTaskWithPriority}>Add Task</button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Delete Confirmation Modal -->
+  {#if showConfirmModal && taskToDelete}
+    <div class="modal-overlay" on:click={closeConfirmModal}>
+      <div class="modal modal-warning" on:click|stopPropagation>
+        <div class="modal-header">
+          <h3>🗑️ Confirm Deletion</h3>
+          <button class="modal-close" on:click={closeConfirmModal}>×</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete the task "{taskToDelete.title}"?</p>
+          <p style="color: #999; font-size: 14px; margin-top: 10px;">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-modal btn-cancel" on:click={closeConfirmModal}>Cancel</button>
+          <button class="btn-modal btn-delete" on:click={confirmDelete}>Delete</button>
         </div>
       </div>
     </div>
@@ -318,14 +354,14 @@
     <div class="modal-overlay" on:click={closeModal}>
       <div class="modal modal-{modalType}" on:click|stopPropagation>
         <div class="modal-header">
-          <h3>{modalType === 'error' ? '⚠️ Ошибка' : modalType === 'warning' ? '⚠️ Внимание' : '✅ Успешно'}</h3>
+          <h3>{modalType === 'error' ? '⚠️ Error' : modalType === 'warning' ? '⚠️ Warning' : '✅ Success'}</h3>
           <button class="modal-close" on:click={closeModal}>×</button>
         </div>
         <div class="modal-body">
           <p>{modalMessage}</p>
         </div>
         <div class="modal-footer">
-          <button class="btn-modal" on:click={closeModal}>ОК</button>
+          <button class="btn-modal" on:click={closeModal}>OK</button>
         </div>
       </div>
     </div>
@@ -591,6 +627,15 @@
     background-color: #357abd;
   }
 
+  .btn-delete {
+    background-color: #dc3545;
+    color: white;
+  }
+
+  .btn-delete:hover {
+    background-color: #c82333;
+  }
+
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -815,16 +860,6 @@
 
   .delete-btn:hover {
     background-color: #e53935;
-  }
-
-  .debug-info {
-    margin-top: 30px;
-    padding: 15px;
-    background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    color: rgba(255, 255, 255, 0.8);
-    width: 100%;
-    text-align: center;
   }
 
   .debug-info p {

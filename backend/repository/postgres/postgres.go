@@ -33,7 +33,7 @@ func (p *postgres) GetTasks(sortByCreatedDesc bool) []models.Task {
 	err := p.db.Select(&tasks, query)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			p.logger.Info("No tasks found - this is normal for a new database")
+			p.logger.Info("No tasks found")
 			return []models.Task{}
 		}
 		p.logger.Error("Error fetching tasks", "error", err)
@@ -42,21 +42,11 @@ func (p *postgres) GetTasks(sortByCreatedDesc bool) []models.Task {
 	return tasks
 }
 
-func (p *postgres) AddTask(title string, priority models.Priority) (models.Task, error) {
-	// Create a new task with default values
-	now := time.Now()
-	task := models.Task{
-		Title:     title,
-		Status:    models.StatusActive,
-		Priority:  priority,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-
+func (p *postgres) AddTask(task models.Task) (models.Task, error) {
 	// Insert the task into the database and get the ID
 	query := `
-		INSERT INTO tasks (title, status, priority, created_at, updated_at) 
-		VALUES ($1, $2, $3, $4, $5) 
+		INSERT INTO tasks (title, status, priority, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`
 	err := p.db.QueryRow(
@@ -69,7 +59,7 @@ func (p *postgres) AddTask(title string, priority models.Priority) (models.Task,
 	).Scan(&task.ID)
 
 	if err != nil {
-		p.logger.Error("Error adding task", "error", err, "title", title)
+		p.logger.Error("Error adding task", "error", err, "title", task.Title)
 		return models.Task{}, err
 	}
 
@@ -96,27 +86,14 @@ func (p *postgres) DeleteTask(id int) bool {
 	return rowsAffected > 0
 }
 
-func (p *postgres) ToggleStatus(id int, status models.Status) (models.Task, error) {
-	var newStatus models.Status
-	var completedAt *time.Time
-
-	if status == models.StatusActive {
-		newStatus = models.StatusDone
-		now := time.Now()
-		completedAt = &now
-	} else {
-		newStatus = models.StatusActive
-		completedAt = nil
-	}
-
-	// Обновляем статус задачи
-	query := `UPDATE tasks 
-		SET status = $1, completed_at = $2, updated_at = NOW() 
-		WHERE id = $3 
+func (p *postgres) UpdateTask(id int, status models.Status, completedAt *time.Time) (models.Task, error) {
+	query := `UPDATE tasks
+		SET status = $1, completed_at = $2, updated_at = NOW()
+		WHERE id = $3
 		RETURNING id, title, status, priority, completed_at, created_at, updated_at`
 
 	var task models.Task
-	err := p.db.QueryRow(query, newStatus, completedAt, id).Scan(
+	err := p.db.QueryRow(query, status, completedAt, id).Scan(
 		&task.ID,
 		&task.Title,
 		&task.Status,
@@ -127,7 +104,7 @@ func (p *postgres) ToggleStatus(id int, status models.Status) (models.Task, erro
 	)
 
 	if err != nil {
-		p.logger.Error("Error updating task status", "error", err, "id", id)
+		p.logger.Error("Error updating task", "error", err, "id", id)
 		return models.Task{}, err
 	}
 
