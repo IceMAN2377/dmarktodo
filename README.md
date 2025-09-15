@@ -4,32 +4,23 @@ A todo application built with Wails (Go + Svelte) and PostgreSQL.
 
 ## Screenshots
 
-<!-- Screenshot placeholder-->
-![Main Interface](screenshots/Снимок экрана 2025-09-15 в 10.34.19.png)
+![Main Interface](screenshots/main-interface.png)
 
-<!-- Screenshot placeholder -->
-![Select priority](screenshots/Снимок экрана 2025-09-15 в 10.48.35.png)
+![Select Priority](screenshots/select-priority.png)
 
-<!-- Screenshot placeholder -->
-![Added task](screenshots/Снимок экрана 2025-09-15 в 10.48.50.png)
+![Added Task](screenshots/added-task.png)
 
-<!-- Screenshot placeholder -->
-![Added more tasks](screenshots/Снимок экрана 2025-09-15 в 10.50.12.png)
+![Task List View](screenshots/task-list-view.png)
 
-<!-- Screenshot placeholder] -->
-![Added more tasks](screenshots/Снимок экрана 2025-09-15 в 10.50.25.png)
+![Multiple Tasks](screenshots/multiple-tasks.png)
 
-<!-- Screenshot placeholder] -->
-![Added more tasks](screenshots/Снимок экрана 2025-09-15 в 10.50.38.png)
+![Task Management](screenshots/task-management.png)
 
-<!-- Screenshot placeholder] -->
-![Added more tasks](screenshots/Снимок экрана 2025-09-15 в 10.50.46.png)
+![Application Demo](screenshots/app-demo.png)
 
-<!-- Screenshot placeholder] -->
-![Added more tasks](screenshots/Снимок экрана 2025-09-15 в 10.50.52.png)
+![Todo Features](screenshots/todo-features.png)
 
-<!-- Screenshot placeholder] -->
-![Added more tasks](screenshots/Снимок экрана 2025-09-15 в 10.51.00.png)
+![Final View](screenshots/final-view.png)
 
 ## Prerequisites
 
