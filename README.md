@@ -60,7 +60,8 @@ This creates a production-ready executable in the `build/bin/` directory.
 After building, run the application from the terminal:
 
 ```bash
-./build/bin/dmarktodo
+./build/bin/dmarktodo.app/Contents/MacOS/dmarktodo
+
 ```
 
 ## Development
