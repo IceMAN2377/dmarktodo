@@ -4,6 +4,8 @@ A todo application built with Wails (Go + Svelte) and PostgreSQL.
 
 The 1.2 (Day/Night theme) and the bonus part of 6 (Sorting by priority and filtering by date) were not implemented! Apart of them, every other point was implemented
 
+See the video: Todolist.mov
+
 ## Screenshots
 
 ![Main Interface](screenshots/main-interface.png)
